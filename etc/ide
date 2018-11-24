@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+Who="Tim Menzies"
+When=2018
+What="Lua development tools"
+Lua="`which lua`"
+Vim="/usr/local/bin/vim"
+Head="# vim: set ts=2 sw=2 sts=2 expandtab:cindent:formatoptions+=crqt"
+
+usage() { cat<<-EOF
+	
+	# Do this once:
+	Edit the ide file, edit the first 8 lines.
+
+	cd etc; chmod +x etc; ./etc setup
+
+	# To call this code
+	To run something:
+
+	../etc/idea com
+	
+	For a list of commands, see
+
+	../etc/ide help
+	
+	# If you want a handy shortcut...
+	alias i="../etc/ide "
+	
+	EOF
+}
+
+# config. 
+
+Ide=".."
+Etc="$Ide/etc"
+Docs="$Ide/docs"
+Src="$Ide/src"
+Tests="$Ide/tests"
+Tmp="$Ide/tmp"
+
+if [ ! -d "$Etc" ]; then 
+  echo "Run this script command in a sub-directory below repository main directory"
+  exit 1
+fi
+
+mkdir -p $Tmp
+
+for d in $Docs $Etc $Src $Tests; do
+  mkdir -p $d
+  f="$d/README.md"
+  if [ ! -f "$f" ]; then touch $f; git add $f; fi
+done
+
+setup1() {
+  if [ ! -f "$2" ]; then $1 > $2; git add $2; fi
+}
+setup() { ## # setup files
+ setup1 _readme    ../README.md
+ setup1 _requires  ../requirements.txt
+ setup1 _gitignore ../.gitignore
+ setup1 _license   ../LICENSE.md
+ setup1 _citation  ../CITATION.md
+ setup1 _vimrc     $Tmp/vimrc
+ setup1 _lib       $Src/lib.awk
+}
+hi() { ## # pull from repo
+  git pull
+}
+bye() { ## # push to repo
+  git commit -am 'new stuff'
+  git push
+  git status
+}
+blank() {  ## # Show an empty file
+  cat<<-EOF
+	$Head
+
+	@include "gold"
+
+EOF
+}
+_readme() { cat<<-EOF
+	# Languagez.lua
+
+	[![DOI](https://zenodo.org/badge/158887786.svg)](https://zenodo.org/badge/latestdoi/158887786)
+
+	Mapping some generic languagez tools into lua.
+
+	## Setup
+
+	- **Zenodo:** need to  remove appplication restrictions at the organization level
+	  https://github.com/organizations/languagez/settings/oauth_application_policy
+
+EOF
+}
+_requires() { cat<<-EOF
+	gawk>=4.1
+EOF
+}
+# grab your favorite gitignore from https://github.com/github/gitignore
+_gitignore() { cat<<-EOF
+	tmp
+	.awk
+	
+	## VIM STUFF
+	# Swap
+	[._]*.s[a-v][a-z]
+	[._]*.sw[a-p]
+	[._]s[a-rt-v][a-z]
+	[._]ss[a-gi-z]
+	[._]sw[a-p]
+	
+	# Session
+	Session.vim
+	
+	# Temporary
+	.netrwhist
+	*~
+	# Auto-generated tag files
+	tags
+	# Persistent undo
+	[._]*.un~
+EOF
+}
+_license() { cat<<-EOF
+	# LICENSE
+
+	Redistribution and use in source and binary forms, with or
+	without modification, are permitted provided that the
+	following conditions are met:
+	
+	1. Redistributions of source code must retain the above
+	copyright notice, this list of conditions and the following
+	disclaimer.
+	
+	2. Redistributions in binary form must reproduce the above
+	copyright notice, this list of conditions and the following
+	disclaimer in the documentation and/or other materials
+	provided with the distribution.
+	
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+	CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+	MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+	CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+	CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+	OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+EOF
+}
+_citation() { 
+	cat<<-EOF
+	# CITATION
+
+	Please cite this work as
+
+	$Who, $When
+	$What
+
+	    @misc{languagez:gawk19,
+	    	title  = "$What",
+	    	author = "$Who",
+	    	year   = "$When,
+	    }
+	
+EOF
+}
+# end config
+#---------------------------------
+help() { ## # Show options.
+  _banner
+  printf "options:\n"
+  grep '{ ##' $0  | sort | gawk '
+  BEGIN  {FS="#"}
+  /grep/ { next}
+         { gsub(/[^a-zA-Z0-9_]/,"",$1)
+	   printf("  %-10s%-8s%s\n",$1,$3,$4)}'
+  echo
+}
+
+_banner() { 
+  red=$(tput setaf 1)
+  blue=$(tput setaf 6)
+  ltyl=$(tput setaf 11)
+  white=$(tput setaf 15)
+  tput setaf 11
+  cat<<-'EOF'
+
+	       .-"; ! ;"-.
+	      .'!  : | :  !`.
+	     /\  ! : ! : !  /\
+	    /\ |  ! :|: !  | /\
+	   (  \ \ ; :!: ; / /  )
+	  ( `. \ | !:|:! | / .' )
+	  (`. \ \ \!:|:!/ / / .')
+	   \ `.`.\ |!|! |/,'.' /
+	    `._`.\\\!!!// .'_.'
+	       `.`.\\|//.'.'
+	        |`._`n'_.'|  hjw
+	        "----^----"	
+	EOF
+   cat<<-EOF
+
+	$What
+	$Who, $When
+
+	EOF
+  tput setaf 6
+}
+_passfail() { 
+  gawk '
+    BEGIN        { f = p = 0 }
+                 { print $0 }
+    $2=="PASSED" { p++ }
+    $2=="FAILED" { f++ }
+    END          { 
+      print "\n# :PASSED " p " :FAILED " f \
+	    " :PERCENT " int(101*p/(p+f+0.0001))
+      exit FAILED > 0
+    }'
+}
+_ok() { ## STEM # Run one file. If no arg, then run all.
+  if [ -z "$1" ]; then
+    for f in *ok.auk; do
+	    run $(basename "$f" ".auk")
+    done | _passfail
+  else 
+    if [ ! -f "${1}ok.auk" ]; then
+	echo "#E> missing ${1}ok.auk"
+	return 1
+    fi
+    run ${1}ok | _passfail
+  fi  
+}
+_2awk() {
+  $Awk '
+BEGIN              {In=1}
+gsub(/^\"\"\"/,"") { In =  1 - In  }
+                   { pre  = In ? "" : "# " }
+In  { $0 =  gensub(/\.([^0-9])([a-zA-Z0-9_]*)/, "[\"\\1\\2\"]", "g", $0) }
+    { gsub(/__/,".",$0) 
+      print pre $0 }
+
+' -
+}
+_vimrc() { cat<<-EOF 
+	set ruler
+	set backupdir-=.
+	set backupdir^=~/tmp,/tmp
+	set nocompatible 
+	filetype plugin indent on
+	set modelines=3
+	set scrolloff=3
+	set autoindent
+	set visualbell
+	set backspace=indent,eol,start
+	set laststatus=2
+	set splitbelow
+	set mouse=a
+	set title
+	set number
+	autocmd BufEnter * silent! lcd %:p:h
+	set nohlsearch
+	set showmatch
+	set matchtime=15
+	set background=light     
+	set syntax=on
+	syntax enable
+	set ignorecase
+	set incsearch
+	set smartcase
+	set showmatch
+	colorscheme zellner
+	set statusline=%f\ 
+	set statusline+=%2*\ %y\                   "FileType
+	set statusline+=%4*\%{&ff}\                 "FileFormat (dos/unix..)
+	set statusline+=%8*\ %=\ %l/%L\              "Rownumber/total (%)
+	set statusline+=%9*\ %03c\                   "Colnr
+	set statusline+=%0*\ \ %m%r%w\ %P\           "Modified? Readonly? Top/bot.
+	EOF
+}
+ed() {
+  $Vim -u "$Tmp/vimrc" $*
+}
+_gitting() {
+  git config --global credential.helper cache
+  git config credential.helper 'cache --timeout=3600'
+}
+push() { ## # Commit all, push to Github
+  _gitting
+  git status; git commit -am "commit"; git push
+}
+pull() { ## # Pull from Github
+  _gitting
+  git pull
+}
+###################################
+# get all the configs (if any)
+
+
+if [ `type -t $1`"" == 'function' ]; then
+        f=$1
+        shift
+        $f "$@"
+else
+  help
+fi
