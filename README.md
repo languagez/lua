@@ -1,6 +1,6 @@
 # Languagez.lua
 
-[![DOI](https://zenodo.org/badge/158887786.svg)](https://zenodo.org/badge/latestdoi/158887786)
+[![DOI](https://zenodo.org/badge/158912309.svg)](https://zenodo.org/badge/latestdoi/158912309)
 
 Mapping some generic languagez tools into lua.
 
