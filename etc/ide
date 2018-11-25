@@ -62,6 +62,8 @@ setup() { ## # setup files
  setup1 _vimrc     $Tmp/vimrc
  setup1 _lib       $Src/lib.awk
  setup1 _contrib   ../CONTRIBUTING.md
+ setup1 _nojekyll  $Docs/.nojekyll
+
 }
 hi() { ## # pull from repo
   git pull
@@ -78,6 +80,9 @@ blank() {  ## # Show an empty file
 	@include "gold"
 
 EOF
+}
+_nojekyll() {
+  echo .nojekyll
 }
 _readme() { cat<<-EOF
 	# Languagez.lua
